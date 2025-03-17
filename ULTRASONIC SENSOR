@@ -1,0 +1,37 @@
+DETECTING THE DISTANCE USING ULTRASONIC SENSOR
+
+import paho.mqtt.client as mqtt
+import datetime as dt
+import time
+
+#Event
+def on_message_distance(edge, userdata, msg):
+    print('Received a new distance data:' + (msg.payload.decode('utf-8')))
+
+def on_subscribe_success(mosq, obj, mid,granted_qos):
+    time.sleep(0.5)
+    edge.on_publish = on_publish_stp_success
+    edge.publish('PSGRIT-DEV0012/BOOT','IN:ULT:00004:N/A:STP')
+
+def on_publish_stp_success(mosq, obj, mid):  
+   time.sleep(0.5)
+   edge.on_publish = on_publish_srt_success                                                                                                                                                              
+   edge.publish('PSGRIT-DEV0012/BOOT','IN:ULT:00004:N/A:SRT')
+ 
+def on_publish_srt_success(mosq, obj, mid):
+   print("mid: " + str(mid))
+
+def on_connect(edge, userdata, flags, rc):
+    if rc == 0:
+       print("Connected to MQTT Broker!")
+       edge.message_callback_add('PIR3/IN/PIR:00004', on_message_distance)
+       edge.on_subscribe = on_subscribe_success
+       edge.subscribe('PIR3/IN/PIR:00004')  
+    else:
+       print("Failed to connect, return code %d\n", rc)
+
+# Starting Point
+edge = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1,'eds_demoiot1'+ str(dt.datetime.now()))    
+edge.on_connect = on_connect  
+edge.connect('20.219.125.196', 1883)              
+edge.loop_forever()
